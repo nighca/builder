@@ -9,11 +9,12 @@ import * as MiniCssExtractPlugin from 'mini-css-extract-plugin'
 import * as CssMinimizerPlugin from 'css-minimizer-webpack-plugin'
 import { getBuildRoot, abs, getStaticPath, getDistPath, getSrcPath } from '../utils/paths'
 import { BuildConfig, findBuildConfig } from '../utils/build-conf'
-import { addTransforms } from './transform'
+import { addTransforms, appendCacheGroups, SplitChunksCacheGroups } from './transform'
 import { Env, getEnv } from '../utils/build-env'
 import logger from '../utils/logger'
 import { getPathFromUrl, getPageFilename } from '../utils'
 import { appendPlugins } from '../utils/webpack'
+import chunks from '../constants/chunks'
 
 const dirnameOfBuilder = path.resolve(__dirname, '../..')
 const nodeModulesOfBuilder = path.resolve(dirnameOfBuilder, 'node_modules')
@@ -63,13 +64,48 @@ export async function getConfig(): Promise<Configuration> {
     }
   }
 
+  const baseChunks: string[] = []
+
+  if (getEnv() === Env.Prod) {
+    const { extractVendor, extractCommon } = buildConfig.optimization
+    const cacheGroups: SplitChunksCacheGroups = {}
+
+    if (extractVendor) {
+      if (typeof extractVendor === 'string') {
+        logger.warn('BREAKING CHANGE: The type of extractVendor no longer a string, please use an array, like ["react", "react-dom"]')
+      } else if (extractVendor.length > 0) {
+        baseChunks.push(chunks.vendor)
+        cacheGroups[chunks.vendor] = {
+          name: chunks.vendor,
+          test: new RegExp(`[\\\\/]node_modules[\\\\/](${extractVendor.join('|')})[\\\\/]`),
+          chunks: 'all',
+          priority: -10,
+          minSize: 0
+        }
+      }
+    }
+
+    if (extractCommon) {
+      baseChunks.push(chunks.common)
+      cacheGroups[chunks.common] = {
+        name: chunks.common,
+        chunks: 'all',
+        minSize: 0,
+        minChunks: 2
+      }
+    }
+
+    config = appendCacheGroups(config, cacheGroups)
+  }
+
   config = addTransforms(config, buildConfig)
 
   const htmlPlugins = Object.entries(buildConfig.pages).map(([ name, { template, entries } ]) => {
     return new HtmlPlugin({
       template: abs(template),
       filename: getPageFilename(name),
-      chunks: entries
+      chunks: [...baseChunks, ...entries],
+      chunksSortMode: 'manual'
     })
   })
 

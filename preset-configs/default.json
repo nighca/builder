@@ -58,7 +58,7 @@
   "optimization": {
     "addPolyfill": true,
     "extractCommon": true,
-    "extractVendor": "",
+    "extractVendor": [],
     "compressImage": false,
     "transformDeps": false
   },

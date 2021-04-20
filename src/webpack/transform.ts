@@ -1,5 +1,5 @@
 import produce from 'immer'
-import { Configuration, RuleSetConditionAbsolute, RuleSetRule } from 'webpack'
+import { Configuration, RuleSetConditionAbsolute, RuleSetRule, Chunk } from 'webpack'
 import * as postcssPresetEnv from 'postcss-preset-env'
 import * as MiniCssExtractPlugin from 'mini-css-extract-plugin'
 import { Transform } from '../constants/transform'
@@ -456,5 +456,51 @@ function makeBabelLoaderOptions(
 
     // 用于指定预期模块类型，若用户未指定，则使用默认值 unambiguous，即：自动推断
     nextOptions.sourceType = nextOptions.sourceType || 'unambiguous'
+  })
+}
+
+export interface SplitChunksCacheGroup {
+  /**
+   * Select chunks for determining cache group content
+   * @default 'initial'
+   */
+  chunks?: 'all' | 'initial' | 'async' | ((chunk: Chunk) => boolean)
+  /**
+   * Minimum number of times a module has to be duplicated until it's considered for splitting.
+   * @default 1
+   */
+  minChunks?: number
+  /**
+   * Minimum size, in bytes, for a chunk to be generated.
+   * @default 20000
+   */
+  minSize?: number
+  /**
+   * Give chunks for this cache group a name (chunks with equal name are merged).
+   */
+  name?: string
+  /**
+   * Priority of this cache group.
+   * @default -20
+   */
+  priority?: number
+  /**
+   * Assign modules to a cache group by module name.
+   */
+  test?: string | Function | RegExp
+}
+
+export type SplitChunksCacheGroups = { [key: string]: SplitChunksCacheGroup }
+
+/** 向配置中追加 cacheGroup 项 */
+export function appendCacheGroups(
+  config: Configuration, cacheGroups: SplitChunksCacheGroups
+): Configuration {
+  return produce(config, newConfig => {
+    newConfig.optimization = newConfig.optimization || {}
+    newConfig.optimization.splitChunks = newConfig.optimization.splitChunks || {}
+    newConfig.optimization.splitChunks.cacheGroups = newConfig.optimization.splitChunks.cacheGroups || {}
+
+    Object.assign(newConfig.optimization.splitChunks.cacheGroups, cacheGroups)
   })
 }
