@@ -223,7 +223,7 @@ const apiUrl = "http://foobar.com/api" + 'test'
 
     控制是否抽取固定依赖（vendor）到单独的文件中，而不会重复出现在每个 entry 的结果文件里。
 
-    一方面它可以更精确地实现抽取公共内容的效果，另外一方面，在 vendor 内容不变的情况下，结果文件本身的 hash 不会改变，可以更充分地利用浏览器缓存。典型的 vendor 的内容如：`['react', 'moment', 'lodash]`
+    一方面它可以更精确地实现抽取公共内容的效果，另外一方面，在 vendor 内容不变的情况下，结果文件本身的 hash 不会改变，可以更充分地利用浏览器缓存。典型的 vendor 的内容如：`["react", "moment", "lodash"]`
 
 - **`optimization.compressImage`**
 

@@ -73,11 +73,14 @@ export async function getConfig(): Promise<Configuration> {
     if (extractVendor) {
       if (typeof extractVendor === 'string') {
         logger.warn('BREAKING CHANGE: The type of extractVendor no longer a string, please use an array, like ["react", "react-dom"]')
-      } else if (extractVendor.length > 0) {
+      } else {
         baseChunks.push(chunks.vendor)
+        // extractVendor 传空数组时，默认将依赖的 node_modules 都打包进 vendor
+        const vendorModules = extractVendor.length > 0 ? `(${extractVendor.join('|')})[\\\\/]` : ''
+
         cacheGroups[chunks.vendor] = {
           name: chunks.vendor,
-          test: new RegExp(`[\\\\/]node_modules[\\\\/](${extractVendor.join('|')})[\\\\/]`),
+          test: new RegExp(`[\\\\/]node_modules[\\\\/]${vendorModules}`),
           chunks: 'all',
           priority: -10,
           minSize: 0
