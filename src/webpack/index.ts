@@ -72,7 +72,7 @@ export async function getConfig(): Promise<Configuration> {
 
     if (extractVendor) {
       if (typeof extractVendor === 'string') {
-        logger.warn('BREAKING CHANGE: The type of extractVendor no longer a string, please use an array, like ["react", "react-dom"]')
+        logger.warn('BREAKING CHANGE: extractVendor 不再支持指定 entry name，请指定固定依赖的包名数组，例如 ["react", "react-dom"]')
       } else {
         baseChunks.push(chunks.vendor)
         // extractVendor 传空数组时，默认将依赖的 node_modules 都打包进 vendor
@@ -80,10 +80,9 @@ export async function getConfig(): Promise<Configuration> {
 
         cacheGroups[chunks.vendor] = {
           name: chunks.vendor,
-          test: new RegExp(`[\\\\/]node_modules[\\\\/]${vendorModules}`),
           chunks: 'all',
-          priority: -10,
-          minSize: 0
+          test: new RegExp(`[\\\\/]node_modules[\\\\/]${vendorModules}`),
+          priority: -10
         }
       }
     }
@@ -93,8 +92,8 @@ export async function getConfig(): Promise<Configuration> {
       cacheGroups[chunks.common] = {
         name: chunks.common,
         chunks: 'all',
-        minSize: 0,
-        minChunks: 2
+        minChunks: 2,
+        priority: -20
       }
     }
 

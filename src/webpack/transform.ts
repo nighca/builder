@@ -471,11 +471,6 @@ export interface SplitChunksCacheGroup {
    */
   minChunks?: number
   /**
-   * Minimum size, in bytes, for a chunk to be generated.
-   * @default 20000
-   */
-  minSize?: number
-  /**
    * Give chunks for this cache group a name (chunks with equal name are merged).
    */
   name?: string
