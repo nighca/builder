@@ -1,10 +1,15 @@
 import produce from 'immer'
+import * as path from 'path'
 import { Configuration, RuleSetConditionAbsolute, RuleSetRule, Chunk } from 'webpack'
 import * as postcssPresetEnv from 'postcss-preset-env'
 import * as MiniCssExtractPlugin from 'mini-css-extract-plugin'
 import { Transform } from '../constants/transform'
-import { BuildConfig, TransformObject, shouldAddGlobalPolyfill, AddPolyfill, shouldAddRuntimePolyfill } from '../utils/build-conf'
+import {
+  BuildConfig, TransformObject, shouldAddGlobalPolyfill,
+  AddPolyfill, shouldAddRuntimePolyfill, Optimization
+} from '../utils/build-conf'
 import { Env, getEnv } from '../utils/build-env'
+import chunks from '../constants/chunks'
 
 export interface Condition {
   /** 需要处理的资源 */
@@ -487,14 +492,62 @@ export interface SplitChunksCacheGroup {
 
 export type SplitChunksCacheGroups = { [key: string]: SplitChunksCacheGroup }
 
+/** 解析 optimization 配置，获取 chunks 及 cacheGroups */
+export function parseOptimizationConfig(optimization: Optimization): {
+  baseChunks: string[]
+  cacheGroups: SplitChunksCacheGroups
+} {
+  const { extractVendor, extractCommon } = optimization
+  const baseChunks: string[] = []
+  const cacheGroups: SplitChunksCacheGroups = {}
+
+  if (extractVendor) {
+    if (typeof extractVendor === 'string') {
+      throw new Error('BREAKING CHANGE: extractVendor 已不再支持该用法，使用方式请参考帮助文档！')
+    } else if (typeof extractVendor === 'boolean' || extractVendor.length > 0) {
+      baseChunks.push(chunks.vendor)
+
+      cacheGroups[chunks.vendor] = {
+        name: chunks.vendor,
+        chunks: 'all',
+        priority: -10,
+        test: function(module: { resource?: string }): boolean {
+          const resource = module.resource
+          if (!resource) return false
+
+          if (typeof extractVendor === 'boolean') {
+            return resource.includes('node_modules')
+          }
+
+          return extractVendor.findIndex(packageName => {
+            return resource.includes(path.join('node_modules', packageName))
+          }) !== -1
+        }
+      }
+    }
+  }
+
+  if (extractCommon) {
+    baseChunks.push(chunks.common)
+    cacheGroups[chunks.common] = {
+      name: chunks.common,
+      chunks: 'all',
+      minChunks: 2,
+      priority: -20
+    }
+  }
+
+  return { baseChunks, cacheGroups }
+}
+
 /** 向配置中追加 cacheGroup 项 */
 export function appendCacheGroups(
   config: Configuration, cacheGroups: SplitChunksCacheGroups
 ): Configuration {
   return produce(config, newConfig => {
-    newConfig.optimization = newConfig.optimization || {}
-    newConfig.optimization.splitChunks = newConfig.optimization.splitChunks || {}
-    newConfig.optimization.splitChunks.cacheGroups = newConfig.optimization.splitChunks.cacheGroups || {}
+    newConfig.optimization ||= {}
+    newConfig.optimization.splitChunks ||= {}
+    newConfig.optimization.splitChunks.cacheGroups ||= {}
 
     Object.assign(newConfig.optimization.splitChunks.cacheGroups, cacheGroups)
   })

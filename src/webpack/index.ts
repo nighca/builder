@@ -9,12 +9,11 @@ import * as MiniCssExtractPlugin from 'mini-css-extract-plugin'
 import * as CssMinimizerPlugin from 'css-minimizer-webpack-plugin'
 import { getBuildRoot, abs, getStaticPath, getDistPath, getSrcPath } from '../utils/paths'
 import { BuildConfig, findBuildConfig } from '../utils/build-conf'
-import { addTransforms, appendCacheGroups, SplitChunksCacheGroups } from './transform'
+import { addTransforms, appendCacheGroups, parseOptimizationConfig } from './transform'
 import { Env, getEnv } from '../utils/build-env'
 import logger from '../utils/logger'
 import { getPathFromUrl, getPageFilename } from '../utils'
 import { appendPlugins } from '../utils/webpack'
-import chunks from '../constants/chunks'
 
 const dirnameOfBuilder = path.resolve(__dirname, '../..')
 const nodeModulesOfBuilder = path.resolve(dirnameOfBuilder, 'node_modules')
@@ -64,40 +63,12 @@ export async function getConfig(): Promise<Configuration> {
     }
   }
 
-  const baseChunks: string[] = []
+  let baseChunks: string[] = []
 
   if (getEnv() === Env.Prod) {
-    const { extractVendor, extractCommon } = buildConfig.optimization
-    const cacheGroups: SplitChunksCacheGroups = {}
-
-    if (extractVendor) {
-      if (typeof extractVendor === 'string') {
-        logger.warn('BREAKING CHANGE: extractVendor 不再支持指定 entry name，请指定固定依赖的包名数组，例如 ["react", "react-dom"]')
-      } else {
-        baseChunks.push(chunks.vendor)
-        // extractVendor 传空数组时，默认将依赖的 node_modules 都打包进 vendor
-        const vendorModules = extractVendor.length > 0 ? `(${extractVendor.join('|')})[\\\\/]` : ''
-
-        cacheGroups[chunks.vendor] = {
-          name: chunks.vendor,
-          chunks: 'all',
-          test: new RegExp(`[\\\\/]node_modules[\\\\/]${vendorModules}`),
-          priority: -10
-        }
-      }
-    }
-
-    if (extractCommon) {
-      baseChunks.push(chunks.common)
-      cacheGroups[chunks.common] = {
-        name: chunks.common,
-        chunks: 'all',
-        minChunks: 2,
-        priority: -20
-      }
-    }
-
-    config = appendCacheGroups(config, cacheGroups)
+    const result = parseOptimizationConfig(buildConfig.optimization)
+    baseChunks = result.baseChunks
+    config = appendCacheGroups(config, result.cacheGroups)
   }
 
   config = addTransforms(config, buildConfig)
