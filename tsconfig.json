@@ -8,13 +8,15 @@
       "es6"
     ],
     "strict": true,
+    "esModuleInterop": true,
+    "importHelpers": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "downlevelIteration": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "resolveJsonModule": true,
-    "sourceMap": true,
+    "sourceMap": false,
     "skipLibCheck": true
   },
   "exclude": [
