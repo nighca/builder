@@ -1,5 +1,8 @@
 {
   "extends": "typescript-react",
+  "targets": {
+    "browsers": ["defaults, not ie 11"]
+  },
   "transforms": {
     "svg@js": "raw",
     "svg@jsx": "raw",
