@@ -515,13 +515,14 @@ export function parseOptimizationConfig(optimization: Optimization): {
           const resource = module.resource
           if (!resource) return false
 
+          const nodeModulesPath = path.join(path.sep, 'node_modules', path.sep)
           if (typeof extractVendor === 'boolean') {
-            return resource.includes('node_modules')
+            return resource.includes(nodeModulesPath)
           }
 
-          return extractVendor.findIndex(packageName => {
-            return resource.includes(path.join('node_modules', packageName))
-          }) !== -1
+          return extractVendor.some(packageName => {
+            return resource.includes(path.join(nodeModulesPath, packageName, path.sep))
+          })
         }
       }
     }
